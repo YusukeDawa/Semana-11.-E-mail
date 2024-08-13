@@ -106,7 +106,7 @@ def index():
             db.session.add(user)
             db.session.commit()
             session['known'] = False
-            print('Verificando o e-mail do FLASKY_ADMIN', flush=True)
+            print('Verificando FLASKY_ADMIN', flush=True)
             if app.config['FLASKY_ADMIN']:                
                 print('Enviando mensagem...', file=sys.stderr)
                 

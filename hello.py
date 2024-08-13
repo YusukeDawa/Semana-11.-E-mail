@@ -55,24 +55,22 @@ class User(db.Model):
     def __repr__(self):
         return '<User %r>' % self.username
 
-
-#def send_simple_message():
 def send_simple_message(to, subject, newUser):
-    print('Enviando mensagem (POST)...', file=sys.stderr)
-    print('URL: ' + str(app.config['API_URL']), file=sys.stderr)
-    print('api: ' + str(app.config['API_KEY']), file=sys.stderr)
-    print('from: ' + str(app.config['API_FROM']), file=sys.stderr)
-    print('to: ' + str(to), file=sys.stderr)
-    print('subject: ' + str(app.config['FLASKY_MAIL_SUBJECT_PREFIX']) + ' ' + subject, file=sys.stderr)
-    print('text: ' + "Novo usuário cadastrado: " + newUser, file=sys.stderr)
+    print('Enviando mensagem (POST)...', flush=True)
+    print('URL: ' + str(app.config['API_URL']), flush=True)
+    print('api: ' + str(app.config['API_KEY']), flush=True)
+    print('from: ' + str(app.config['API_FROM']), flush=True)
+    print('to: ' + str(to), flush=True)
+    print('subject: ' + str(app.config['FLASKY_MAIL_SUBJECT_PREFIX']) + ' ' + subject, flush=True)
+    print('text: ' + "Novo usuário cadastrado: " + newUser, flush=True)
 
     resposta = requests.post(app.config['API_URL'], 
                              auth=("api", app.config['API_KEY']), data={"from": app.config['API_FROM'], 
                                                                         "to": to, 
                                                                         "subject": app.config['FLASKY_MAIL_SUBJECT_PREFIX'] + ' ' + subject, 
                                                                         "text": "Novo usuário cadastrado: " + newUser})
-    #resposta = requests.post("https://api.mailgun.net/v3/sandboxac1a400f6f814141b8b87a5c3d287cc5.mailgun.org/messages", auth=("api", "d234f37ea61bf5659d81c3b8da3b7a89-911539ec-8316a90b"), data={"from": "fabio.teixeira@ifsp.edu.br", "to": ["fabio.teixeira@ifsp.edu.br", "flaskaulasweb@zohomail.com"], "subject": "Mensagem enviada por meio do Mailgun - " + datetime.now().strftime("%m/%d/%Y, %H:%M:%S"), "text": "Testing some Mailgun awesomeness!"})
-    print('Enviando mensagem (Resposta)...' + str(resposta) + ' - ' + datetime.now().strftime("%m/%d/%Y, %H:%M:%S"), file=sys.stderr)
+        
+    print('Enviando mensagem (Resposta)...' + str(resposta) + ' - ' + datetime.now().strftime("%m/%d/%Y, %H:%M:%S"), flush=True)
     return resposta
 
 
@@ -117,18 +115,9 @@ def index():
             print('text: ' + "Novo usuário cadastrado: " + form.name.data, flush=True)
 
             if app.config['FLASKY_ADMIN']:                
-                print('Enviando mensagem...', file=sys.stderr)
-                
-                print('FLASKY_ADMIN: ' + str(app.config['FLASKY_ADMIN']), file=sys.stderr)
-                print('URL: ' + str(app.config['API_URL']), file=sys.stderr)
-                print('api: ' + str(app.config['API_KEY']), file=sys.stderr)
-                print('from: ' + str(app.config['API_FROM']), file=sys.stderr)
-                print('to: ' + str([app.config['FLASKY_ADMIN'], "flaskaulasweb@zohomail.com"]), file=sys.stderr)
-                print('subject: ' + str(app.config['FLASKY_MAIL_SUBJECT_PREFIX']), file=sys.stderr)
-                print('text: ' + "Novo usuário cadastrado: " + form.name.data, file=sys.stderr)
-
+                print('Enviando mensagem...', flush=True)
                 send_simple_message([app.config['FLASKY_ADMIN'], "flaskaulasweb@zohomail.com"], 'Novo usuário', form.name.data)
-                #send_simple_message()
+                print('Mensagem enviada...', flush=True)
         else:
             session['known'] = True
         session['name'] = form.name.data

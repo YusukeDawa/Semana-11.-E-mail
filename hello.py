@@ -106,7 +106,16 @@ def index():
             db.session.add(user)
             db.session.commit()
             session['known'] = False
-            print('Verificando FLASKY_ADMIN', flush=True)
+
+            print('Verificando variáveis de ambiente: Server log do PythonAnyWhere', flush=True)
+            print('FLASKY_ADMIN: ' + str(app.config['FLASKY_ADMIN']), flush=True)
+            print('URL: ' + str(app.config['API_URL']), flush=True)
+            print('api: ' + str(app.config['API_KEY']), flush=True)
+            print('from: ' + str(app.config['API_FROM']), flush=True)
+            print('to: ' + str([app.config['FLASKY_ADMIN'], "flaskaulasweb@zohomail.com"]), flush=True)
+            print('subject: ' + str(app.config['FLASKY_MAIL_SUBJECT_PREFIX']), flush=True)
+            print('text: ' + "Novo usuário cadastrado: " + form.name.data, flush=True)
+
             if app.config['FLASKY_ADMIN']:                
                 print('Enviando mensagem...', file=sys.stderr)
                 
@@ -118,7 +127,6 @@ def index():
                 print('subject: ' + str(app.config['FLASKY_MAIL_SUBJECT_PREFIX']), file=sys.stderr)
                 print('text: ' + "Novo usuário cadastrado: " + form.name.data, file=sys.stderr)
 
-                print('URL: ' + str(app.config['API_URL']), file=sys.stderr)
                 send_simple_message([app.config['FLASKY_ADMIN'], "flaskaulasweb@zohomail.com"], 'Novo usuário', form.name.data)
                 #send_simple_message()
         else:

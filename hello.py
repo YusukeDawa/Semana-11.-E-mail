@@ -1,6 +1,4 @@
 import os
-import sys
-from threading import Thread
 from flask import Flask, render_template, session, redirect, url_for
 from flask_bootstrap import Bootstrap
 from flask_moment import Moment
@@ -11,23 +9,33 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_mail import Mail, Message
 
-import requests
 from datetime import datetime
 
+# Setup base directory for SQLite database
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'hard to guess string'
-app.config['SQLALCHEMY_DATABASE_URI'] =\
-    'sqlite:///' + os.path.join(basedir, 'data.sqlite')
+
+# Database configuration
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'data.sqlite')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-app.config['API_KEY'] = os.environ.get('API_KEY')
-app.config['API_URL'] = os.environ.get('API_URL')
-app.config['API_FROM'] = os.environ.get('API_FROM')
-
-app.config['FLASKY_MAIL_SUBJECT_PREFIX'] = '[Flasky]'
+# API and mail configurations (environment variables)
+app.config['API_KEY'] = os.environ.get('MY_API_KEY')
+app.config['API_URL'] = os.environ.get('MY_API_URL')
+app.config['MAIL_FROM'] = os.environ.get('MY_MAIL_FROM')
 app.config['FLASKY_ADMIN'] = os.environ.get('FLASKY_ADMIN')
+
+# Mailgun SMTP configuration
+app.config['MAIL_SERVER'] = 'smtp.mailgun.org'
+app.config['MAIL_PORT'] = 587  # or 465 for SSL
+app.config['MAIL_USE_TLS'] = True  # Enable TLS
+app.config['MAIL_USE_SSL'] = False  # Disable SSL
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')  # Mailgun SMTP username
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')  # Mailgun SMTP password
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MY_MAIL_FROM')  # Default email address for sending
+
 
 bootstrap = Bootstrap(app)
 moment = Moment(app)
@@ -35,7 +43,7 @@ db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 mail = Mail(app)
 
-
+# Database models
 class Role(db.Model):
     __tablename__ = 'roles'
     id = db.Column(db.Integer, primary_key=True)
@@ -55,45 +63,25 @@ class User(db.Model):
     def __repr__(self):
         return '<User %r>' % self.username
 
-def send_simple_message(to, subject, newUser):
-    print('Enviando mensagem (POST)...', flush=True)
-    print('URL: ' + str(app.config['API_URL']), flush=True)
-    print('api: ' + str(app.config['API_KEY']), flush=True)
-    print('from: ' + str(app.config['API_FROM']), flush=True)
-    print('to: ' + str(to), flush=True)
-    print('subject: ' + str(app.config['FLASKY_MAIL_SUBJECT_PREFIX']) + ' ' + subject, flush=True)
-    print('text: ' + "Novo usuário cadastrado: " + newUser, flush=True)
 
-    resposta = requests.post(app.config['API_URL'], 
-                             auth=("api", app.config['API_KEY']), data={"from": app.config['API_FROM'], 
-                                                                        "to": to, 
-                                                                        "subject": app.config['FLASKY_MAIL_SUBJECT_PREFIX'] + ' ' + subject, 
-                                                                        "text": "Novo usuário cadastrado: " + newUser})
-        
-    print('Enviando mensagem (Resposta)...' + str(resposta) + ' - ' + datetime.now().strftime("%m/%d/%Y, %H:%M:%S"), flush=True)
-    return resposta
-
-
+# Flask-WTF Form for user input
 class NameForm(FlaskForm):
     name = StringField('What is your name?', validators=[DataRequired()])
     submit = SubmitField('Submit')
 
 
-@app.shell_context_processor
-def make_shell_context():
-    return dict(db=db, User=User, Role=Role)
+# Function to send email using Flask-Mail
+def send_email(subject, recipient, body):
+    msg = Message(subject=subject, recipients=[recipient])
+    msg.body = body
+    try:
+        mail.send(msg)
+        print(f"Email sent successfully to {recipient}")
+    except Exception as e:
+        print(f"Error sending email: {str(e)}")
 
 
-@app.errorhandler(404)
-def page_not_found(e):
-    return render_template('404.html'), 404
-
-
-@app.errorhandler(500)
-def internal_server_error(e):
-    return render_template('500.html'), 500
-
-
+# Main route to handle form submissions and user registration
 @app.route('/', methods=['GET', 'POST'])
 def index():
     form = NameForm()
@@ -105,22 +93,47 @@ def index():
             db.session.commit()
             session['known'] = False
 
-            print('Verificando variáveis de ambiente: Server log do PythonAnyWhere', flush=True)
-            print('FLASKY_ADMIN: ' + str(app.config['FLASKY_ADMIN']), flush=True)
-            print('URL: ' + str(app.config['API_URL']), flush=True)
-            print('api: ' + str(app.config['API_KEY']), flush=True)
-            print('from: ' + str(app.config['API_FROM']), flush=True)
-            print('to: ' + str([app.config['FLASKY_ADMIN'], "flaskaulasweb@zohomail.com"]), flush=True)
-            print('subject: ' + str(app.config['FLASKY_MAIL_SUBJECT_PREFIX']), flush=True)
-            print('text: ' + "Novo usuário cadastrado: " + form.name.data, flush=True)
+            # Check if admin email is set
+            if app.config['FLASKY_ADMIN']:
+                send_email(
+                    subject="Novo usuário cadastrado",
+                    recipient=app.config['FLASKY_ADMIN'],
+                    body=f"Novo usuário cadastrado: {form.name.data}"
+                )
 
-            if app.config['FLASKY_ADMIN']:                
-                print('Enviando mensagem...', flush=True)
-                send_simple_message([app.config['FLASKY_ADMIN'], "flaskaulasweb@zohomail.com"], 'Novo usuário', form.name.data)
-                print('Mensagem enviada...', flush=True)
         else:
             session['known'] = True
         session['name'] = form.name.data
         return redirect(url_for('index'))
     return render_template('index.html', form=form, name=session.get('name'),
                            known=session.get('known', False))
+
+def send_simple_message():
+  	return requests.post(
+  		"https://api.mailgun.net/v3/sandbox99a4b39ab33e4fa4805049dc53fa79ba.mailgun.org/messages",
+  		auth=("api", "YOUR_API_KEY"),
+  		data={"from": "Excited User <postmaster@sandbox99a4b39ab33e4fa4805049dc53fa79ba.mailgun.org>",
+  			"to": ["aoliveiramoraes1112@gmail.com", "postmaster@sandbox99a4b39ab33e4fa4805049dc53fa79ba.mailgun.org"],
+  			"subject": "Hello",
+  			"text": "Testing some Mailgun awesomeness!"})
+
+
+# Shell context for accessing models in the Python shell
+@app.shell_context_processor
+def make_shell_context():
+    return dict(db=db, User=User, Role=Role)
+
+
+# Error handling
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    return render_template('500.html'), 500
+
+
+if __name__ == '__main__':
+    app.run(debug=True)

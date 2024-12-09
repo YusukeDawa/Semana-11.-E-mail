@@ -1,16 +1,63 @@
 {% extends "base.html" %}
-{% import "bootstrap/wtf.html" as wtf %}
 
-{% block title %}Flasky{% endblock %}
+{% block title %}Olá, Stranger!{% endblock %}
 
-{% block page_content %}
-<div class="page-header">
-    <h1>Hello, {% if name %}{{ name }}{% else %}Stranger{% endif %}!</h1>
-    {% if not known %}
-    <p>Pleased to meet you!</p>
-    {% else %}
-    <p>Happy to see you again!</p>
-    {% endif %}
-</div>
-{{ wtf.quick_form(form) }}
+{% block content %}
+<header class="mb-4">
+    <h1>Olá, Stranger!</h1>
+    <p class="lead">Prazer em conhecê-lo!</p>
+</header>
+
+<section>
+    <p>
+        E-mail enviado para o <strong>Administrador do sistema</strong>, notificando o cadastro de um novo usuário.
+    </p>
+
+    <form method="POST">
+        <div class="form-group">
+            <label for="name">Qual é o seu nome?</label>
+           
+        <input type="text" class="form-control" id="name" name="name" placeholder="Digite seu nome" required>
+    </div>
+    <div class="form-group">
+        <label for="prontuario">Prontuário:</label>
+        <input type="text" class="form-control" id="prontuario" name="prontuario" placeholder="Digite seu prontuário" required>
+    </div>
+    <div class="form-group">
+        <label for="email">Seu e-mail:</label>
+        <input type="email" class="form-control" id="email" name="email" placeholder="Digite seu e-mail" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Enviar</button>
+</form>
+
+         
+        <div class="form-check mb-3">
+            <input type="checkbox" class="form-check-input" id="send_email" name="send_email">
+            <label class="form-check-label" for="send_email">
+                Deseja enviar e-mail para flaskaulasweb@zohomail.com?
+            </label>
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+</section>
+
+<section class="mt-5">
+    <h2>Relação de usuários cadastrados</h2>
+    <table class="table table-striped table-bordered">
+        <thead class="thead-dark">
+            <tr>
+                <th>Nome do usuário</th>
+                <th>Função</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.name }}</td>
+                <td>{{ user.role }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
 {% endblock %}
